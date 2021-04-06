@@ -21,18 +21,21 @@ if "%BCI2000TARGET%"=="" goto :unsupported
 set "CONFIRM=%BCI2000%\build\%BCI2000TARGET%
 if not exist "%CONFIRM%\" goto :mismatch
 
-set MODULE=NIDAQ_mx_Source
-set SECTION=Contrib\SignalSource
+set "MODULE=NIDAQ_mx_Source
+set "SECTION=Contrib\SignalSource
+set "SOURCES=%BCI2000%\src\contrib\SignalSource\NIDAQ-MX\NIDAQmxADC.*
 
-set "SRC=%BCI2000%\prog\%MODULE%.exe
-set "DST=%MYROOT%\app\prog\%MODULE%.exe
+set "EXE_SRC=%BCI2000%\prog\%MODULE%.exe
+set "EXE_DST=%MYROOT%\app\prog\%MODULE%.exe
 
 :: note the linkage of the following lines
 msbuild %BCI2000%\build\BCI2000.sln /t:%SECTION%\%MODULE% /p:Configuration=Release /p:Platform=%BCI2000TARGET% && ^
-copy /Y "%SRC%" "%DST%" && ^
-signtool.exe sign /a /t http://timestamp.comodoca.com "%DST%"  && ^
-signtool.exe sign /as /fd sha256 /tr http://timestamp.comodoca.com?td=sha256 /td sha256 "%DST%"  && ^
-dir "%DST%"
+copy /Y "%SOURCES%" "%MYROOT%\app\src\copy\" && ^
+copy /Y "%EXE_SRC%" "%EXE_DST%" && ^
+dir "%EXE_DST%" && ^
+signtool.exe sign /a /t http://timestamp.comodoca.com "%EXE_DST%"  && ^
+signtool.exe sign /as /fd sha256 /tr http://timestamp.comodoca.com?td=sha256 /td sha256 "%EXE_DST%"  && ^
+echo.
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 goto :eof
