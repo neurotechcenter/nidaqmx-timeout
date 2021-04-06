@@ -21,18 +21,23 @@ if "%BCI2000TARGET%"=="" goto :unsupported
 set "CONFIRM=%BCI2000%\build\%BCI2000TARGET%
 if not exist "%CONFIRM%\" goto :mismatch
 
-set "MODULE=NIDAQ_mx_Source
-set "SECTION=Contrib\SignalSource
-set "SOURCES=%BCI2000%\src\contrib\SignalSource\NIDAQ-MX\NIDAQmxADC.*
+set    "MODULE=NIDAQ_mx_Source
+set "SHORTNAME=NIDAQ_~1
+set   "SECTION=Contrib\SignalSource
+set   "SOURCES=%BCI2000%\src\contrib\SignalSource\NIDAQ-MX\NIDAQmxADC.*
 
 set "EXE_SRC=%BCI2000%\prog\%MODULE%.exe
 set "EXE_DST=%MYROOT%\app\prog\%MODULE%.exe
 
+taskkill /F /FI "IMAGENAME eq %MODULE%.exe" >NUL 2>NUL
+taskkill /F /FI "IMAGENAME eq %SHORTNAME%.exe" >NUL 2>NUL
+
 :: note the linkage of the following lines
+
 msbuild %BCI2000%\build\BCI2000.sln /t:%SECTION%\%MODULE% /p:Configuration=Release /p:Platform=%BCI2000TARGET% && ^
-copy /Y "%SOURCES%" "%MYROOT%\app\src\copy\" && ^
 copy /Y "%EXE_SRC%" "%EXE_DST%" && ^
 dir "%EXE_DST%" && ^
+copy /Y "%SOURCES%" "%MYROOT%\app\src\copy\" && ^
 signtool.exe sign /a /t http://timestamp.comodoca.com "%EXE_DST%"  && ^
 signtool.exe sign /as /fd sha256 /tr http://timestamp.comodoca.com?td=sha256 /td sha256 "%EXE_DST%"  && ^
 echo.

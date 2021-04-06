@@ -43,11 +43,22 @@
 #define NIDAQ_MODE_CLEARALLMESSAGES   0
 #define NIDAQ_MODE_ADDMESSAGE         1
 #define NIDAQ_MODE_REMOVEMESSAGE      2
-  
+ 
+
+#include <map>   // for RecordDebugTime()
+#include <deque> // for RecordDebugTime()
+typedef std::deque< double > DebugTimingDeque;
+typedef std::map< std::string, DebugTimingDeque > DebugTimingMap;
 class NIDAQmxADC : public GenericADC
 {
   private:
-    int16      mDeviceNumber;
+	bool               mReadingDebugTimes;
+	std::mutex         mDebuggingMutex;
+	DebugTimingMap     mDebugTimes;
+	DebugTimingDeque & RecordDebugTime( const std::string & name );
+	std::string        ReportDebugTimes( void );
+
+   int16      mDeviceNumber;
     char       mDeviceName[ 16 ];   // the name of the device (specified by board number)
   
     int        mSamplesPerSecond;

@@ -53,6 +53,7 @@ RegisterFilter( NIDAQmxADC, 1 );
 // Returns:    N/A
 // **************************************************************************
 NIDAQmxADC::NIDAQmxADC() :
+  mReadingDebugTimes( false ),
   mDeviceNumber( 0 ),
   mSamplesPerSecond( 0 ),
   mSamplesPerBlock( 0 ),
@@ -89,7 +90,7 @@ NIDAQmxADC::~NIDAQmxADC()
   DAQmxFailed( mResultCode = ( FUNCTION_CALL ) )  \
   && ( sprintf( mErrorMessageBuffer, "some DAQmx function returned error code %d", mResultCode ), true )  /* fallback in case DAQmxGetExtendedErrorInfo() fails */  \
   && ( DAQmxGetExtendedErrorInfo( mErrorMessageBuffer, sizeof( mErrorMessageBuffer ) ), true )  \
-  && ( bcierr << mErrorMessageBuffer << endl, true ) \
+  && ( bcierr << mErrorMessageBuffer << ReportDebugTimes() << endl, true ) \
 )
 #define RETURN_IF_FAILED( FUNCTION_CALL )   if( DAQMXFAILED( FUNCTION_CALL ) ) return mResultCode;
 
@@ -107,6 +108,9 @@ void NIDAQmxADC::Publish()
     "Source list SourceChGain= 1 auto //",
     "Source list SourceChOffset= 1 auto //",
   END_PARAMETER_DEFINITIONS
+  BEGIN_STATE_DEFINITIONS
+	"DebugTimes 1 0 0 0"
+  END_STATE_DEFINITIONS
 }
 
 void NIDAQmxADC::AutoConfig( const SignalProperties& )
@@ -158,6 +162,7 @@ void NIDAQmxADC::Preflight( const SignalProperties&, SignalProperties& outSignal
     Parameter( "SampleBlockSize" ),
     SignalType::int16
   );
+  State( "DebugTimes" );
 }
 
 // **************************************************************************
@@ -216,13 +221,15 @@ void NIDAQmxADC::Process( const GenericSignal&, GenericSignal& signal )
   // let's wait five times longer than what we are supposed to wait
   int timeoutInMilliseconds = ( int )( 0.5 + 1000.0 * mSecondsPerBlock * 5 );
 
+  double elapsed = 0.0, t1 = RecordDebugTime( "Process() 1: called" ).back();
   std::unique_lock< std::mutex > lock( mDataMutex );
   if( mConditionVariable.wait_for(
     lock,
-    std::chrono::milliseconds( timeoutInMilliseconds ),
+    std::chrono::milliseconds( timeoutInMilliseconds * 100 ), // up to 20 seconds!
     [ this ](){ return mNumberOfBuffersQueued > 0; }
   ) ) // after a successful wait_for(), we own the lock, so we'll use these braces to
   {   // effectively mark the mutex critical section (but they are purely cosmetic - we still need to unlock manually, so do not `return`!)
+    elapsed = RecordDebugTime( "Process() 2: acquired mutex" ).back() - t1;
     int16 * buffer = mHalfBuffers[ 0 ]; // the "oldest" buffer in the queue
     if( buffer )
     {
@@ -238,15 +245,19 @@ void NIDAQmxADC::Process( const GenericSignal&, GenericSignal& signal )
       mHalfBuffers[ mNumberOfBuffersQueued - 1 ] = recycledBuffer;
     
       mNumberOfBuffersQueued--;
-      if( mNumberOfBuffersQueued ) bciout << "buffers remaining in queue: " << mNumberOfBuffersQueued << endl;
-    }    
-    else bcierr << "buffer is NULL" << endl;    
-    lock.unlock();    
+      if( mNumberOfBuffersQueued ) bciout << "buffers remaining in queue: " << mNumberOfBuffersQueued << ReportDebugTimes() << endl;
+    }
+    else bcierr << "buffer is NULL" << endl;
+    lock.unlock();
+    RecordDebugTime( "Process() 3: released mutex" );
   } // end mutex critical section
   else
   {
-    bcierr << "timed out waiting for the DAQmx callback to post data after " << timeoutInMilliseconds << "ms" << endl;
-  } 
+    bcierr << "timed out waiting for the DAQmx callback to post data after " << timeoutInMilliseconds / 10.0 << " seconds" << ReportDebugTimes() << endl;
+  }
+  if( elapsed * 1000.0 > timeoutInMilliseconds ) bcierr << "waited too long (" << elapsed << " seconds) for the DAQmx callback to post data" << ReportDebugTimes() << endl;
+
+  if( State( "DebugTimes" ) ) { State( "DebugTimes" ) = 0; bciout << ReportDebugTimes() << endl; }
 }
 
 // **************************************************************************
@@ -261,7 +272,57 @@ void NIDAQmxADC::Halt()
 }
 // GenericADC functions up to here
 
-
+DebugTimingDeque & NIDAQmxADC::RecordDebugTime( const std::string & name )
+{
+	typedef std::chrono::time_point< std::chrono::steady_clock > ClockReading;
+	ClockReading now = std::chrono::steady_clock::now(); // CPLUSPLUS11
+	static ClockReading first = now;
+	std::chrono::duration< double > elapsed = now - first;
+	double t = elapsed.count();
+	
+	std::unique_lock< std::mutex > lock( mDebuggingMutex );
+	bool useLock = mReadingDebugTimes;
+	if( useLock ) lock.lock();
+	DebugTimingDeque & d = mDebugTimes[ name ];
+	while( d.size() > 5 ) d.pop_front();
+	d.push_back( t );
+	if( useLock ) lock.unlock();
+	return d;
+}
+#include <iomanip> // for ReportDebugTimes()
+std::string NIDAQmxADC::ReportDebugTimes( void )
+{
+	
+	DebugTimingDeque & introspective = RecordDebugTime( "ReportDebugTimes() called" );
+	std::map< std::string, std::string > merged;
+	mReadingDebugTimes = true;
+	{
+		std::lock_guard< std::mutex > lock( mDebuggingMutex );
+		for( auto mapIterator = mDebugTimes.begin(); mapIterator != mDebugTimes.end(); mapIterator++ )
+		{
+			const std::string & name = mapIterator->first;
+			const DebugTimingDeque & d = mapIterator->second;
+			for( auto dequeIterator = d.begin(); dequeIterator != d.end(); dequeIterator++ )
+			{
+				double t = *dequeIterator;
+				std::stringstream ss;
+				ss << " " << std::fixed << std::setw( 12 ) << std::setprecision( 6 ) << t;
+				std::string key = ss.str();
+				while( merged.count( key ) ) key += "+";
+				merged[ key ] = name;
+			}
+		}
+		introspective.clear();
+	}
+	mReadingDebugTimes = false;
+	if( !merged.size() ) return "";
+	std::stringstream ss;
+	ss << "{" << endl;
+	for( auto it = merged.begin(); it != merged.end(); it++ )
+	    ss << it->first << ": " << it->second << endl;
+	ss << "}";
+	return ss.str();
+}
 
 // **************************************************************************
 // Function:   Callback
@@ -299,8 +360,10 @@ long int NIDAQmxADC::Callback( TaskHandle mTaskHandle, int32 everyNsamplesEventT
 // **************************************************************************
 int NIDAQmxADC::GetData()
 {  
+  RecordDebugTime( "Callback() 1: called" );
   { // start mutex critical section
     std::lock_guard< std::mutex > lock( mDataMutex );
+    RecordDebugTime( "Callback() 2: acquired mutex" );
     long int sampsPerChanRead;
    
     if( mNumberOfBuffersQueued >= NIDAQ_MAX_BUFFERS )
@@ -319,6 +382,7 @@ int NIDAQmxADC::GetData()
     ) ) )
     {
       mNumberOfBuffersQueued++;
+      RecordDebugTime( "Callback() 3: received data" );
     }
   } // end mutex critical section
   mConditionVariable.notify_one();
