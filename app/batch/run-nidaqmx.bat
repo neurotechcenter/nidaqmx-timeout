@@ -15,10 +15,17 @@ system taskkill /F /FI "IMAGENAME eq DUMMYA~1.exe"
 change directory $BCI2000LAUNCHDIR
 
 show window
-set title ${extract file base $0}
+set title "Well... Here I am."
 
 reset system
-startup system localhost --SystemLogFile=$BCI2000LAUNCHDIR/../../system-logs/$YYYYMMDD-$HHMMSS-operator.txt
+
+set environment GITREV ${system git describe --always --all --long --dirty=+ --broken=!}
+set environment SYSLOG system-logs/$YYYYMMDD-$HHMMSS-operator.txt
+log This log will be saved in $SYSLOG
+
+startup system localhost --SystemLogFile=$BCI2000LAUNCHDIR/../../$SYSLOG
+
+warn git revision is $GITREV
 
 start executable NIDAQ_mx_Source       --local
 start executable DummySignalProcessing --local
