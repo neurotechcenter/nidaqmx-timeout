@@ -1,0 +1,42 @@
+[CONFIG]
+WatchesWindow\Size=@Size(400 100)
+WatchesWindow\Pos=@Point(100 100)
+WatchesWindow\State=@ByteArray(\0\0\0\0\0\0\x34@d\0\0\0\x32\0\0\0\x32\0\0\0#\0\0\0)
+MainWindow\Size=@Size(552 154)
+MainWindow\Pos=@Point(-1 845)
+WorkingDirectory=
+Various\GlobalUserLevel=3
+Scripts\AfterModulesConnected=
+Scripts\OnExit=
+Scripts\OnSetConfig=
+Scripts\OnResume=
+Scripts\OnSuspend=
+Scripts\OnStart=
+Scripts\OnShutdown=
+Buttons\Button1Name=
+Buttons\Button1Cmd=
+Buttons\Button2Name=
+Buttons\Button2Cmd=
+Buttons\Button3Name=
+Buttons\Button3Cmd=
+Buttons\Button4Name=
+Buttons\Button4Cmd=
+SysLog\Size=@Size(489 807)
+SysLog\Pos=@Point(15 3)
+MainWindow\Geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\0\x1\0\0\0\0\0\0\x2\xf\0\0\0\xb5\0\0\0\x2\0\0\0\x1f\0\0\x2\xe\0\0\0\xb4\0\0\0\0\0\0\0\0\a\x80\0\0\0\x2\0\0\0\x1f\0\0\x2\xe\0\0\0\xb4)
+SysLog\Geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\x2\x13\0\0\0\x3\0\0\x5\x16\0\0\x3\x14\0\0\x2\x14\0\0\0\"\0\0\x5\x15\0\0\x3\x13\0\0\0\0\0\0\0\0\a\x80\0\0\x2\x14\0\0\0\"\0\0\x5\x15\0\0\x3\x13)
+WatchesWindow\Geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\0\x64\0\0\0\x64\0\0\x1\xf3\0\0\0\xc7\0\0\0\x64\0\0\0\x64\0\0\x1\xf3\0\0\0\xc7\0\0\0\0\0\0\0\0\a\x80\0\0\0\x64\0\0\0\x64\0\0\x1\xf3\0\0\0\xc7)
+
+[VISUALIZATION]
+SRCD\Title=Source Signal
+SRCD\Top=363
+SRCD\Left=4
+SRCD\Width=523
+SRCD\Height=391
+SRCD%3A\Title=Source Signal
+SRCD%3A\ChannelColors={0x00AAFF 0xFF0000 0xFFFFFF 0x00FF00 0xFFFF00 }
+RNDT\Title=Timing
+RNDT\Top=184
+RNDT\Left=4
+RNDT\Width=524
+RNDT\Height=147

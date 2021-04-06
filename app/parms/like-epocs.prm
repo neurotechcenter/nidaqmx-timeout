@@ -1,0 +1,27 @@
+Storage:Session               string    SubjectName=                    test     // subject alias
+Storage:Session               string    SubjectSession=                  001     // three-digit session number
+
+Visualize:Timing              int       VisualizeTiming=                   1     // visualize system timing (0=no, 1=yes) (boolean)
+Visualize:Source%20Signal     int       VisualizeSource=                   1     // visualize raw brain signal (0=no, 1=yes) (boolean)
+Visualize:Processing%20Stages int       VisualizeAlignmentFilter=          0     // Visualize AlignmentFilter output (boolean)
+Visualize:Processing%20Stages int       VisualizeTransmissionFilter=       0     // Visualize TransmissionFilter output (boolean)
+
+Visualize:Source%20Signal     int       VisualizeSourceBufferSize=      auto     // number of blocks to aggregate before sending to operator
+Visualize:Source%20Signal     int       VisualizeSourceDecimation=         1     // decimation factor for raw brain signal
+Visualize:Source%20Signal     int       VisualizeSourceTime=               2s    // how much time in Source visualization
+Visualize:Source%20Signal     int       SourceMin=                      -100mV   // raw signal vis Min Value
+Visualize:Source%20Signal     int       SourceMax=                       100mV   // raw signal vis Max Value
+
+Source:NIDAQmxADC             int       BoardNumber=                       1     // The NI-ADC board's device number
+Source:Alignment              int       AlignChannels=                     1     // align channels in time (0=no, 1=yes) (boolean)
+Source:NIDAQmxADC             int       SampleBlockSize=                 128     // The number of samples in one block
+Source:NIDAQmxADC             float     SamplingRate=                   3200     // The signal's sampling rate in Hz
+
+Source:NIDAQmxADC             int       SourceCh=                    3           // The number of channels
+Source:NIDAQmxADC             list      SourceChOffset=              3     0        0        0 
+Source:NIDAQmxADC             list      SourceChGain=                3   162.070  162.070  162.070 
+Source:Signal%20Properties    list      ChannelNames=                3  EMG1     EMG2     TRIG 
+Source:Online%20Processing    list      TransmitChList=              1     *     // list of transmitted channels: Channel names may contain * and ? wildcards,  and character ranges enclosed in []; wildcard patterns may be negated by prepending an exclamation mark.  Ranges of channels may be specified using : or - to separate begin from end.
+Source:Alignment              floatlist SourceChTimeOffset=          0           // time offsets for all source channels (may be empty)
+
+System:Protocol               int       EventLink=                         1     // Send events from Operator to Source module (boolean)
