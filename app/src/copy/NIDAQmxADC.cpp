@@ -85,14 +85,14 @@ NIDAQmxADC::~NIDAQmxADC()
   }
 }
 
-#define DAQMXFAILED( FUNCTION_CALL ) \
+#define CHECK_DAQMX_FAILED( FUNCTION_CALL ) \
 ( \
   DAQmxFailed( mResultCode = ( FUNCTION_CALL ) )  \
   && ( sprintf( mErrorMessageBuffer, "some DAQmx function returned error code %d", mResultCode ), true )  /* fallback in case DAQmxGetExtendedErrorInfo() fails */  \
   && ( DAQmxGetExtendedErrorInfo( mErrorMessageBuffer, sizeof( mErrorMessageBuffer ) ), true )  \
   && ( bcierr << mErrorMessageBuffer << ReportDebugTimes() << endl, true ) \
 )
-#define RETURN_IF_FAILED( FUNCTION_CALL )   if( DAQMXFAILED( FUNCTION_CALL ) ) return mResultCode;
+#define RETURN_IF_FAILED( FUNCTION_CALL )   if( CHECK_DAQMX_FAILED( FUNCTION_CALL ) ) return mResultCode;
 
 void NIDAQmxADC::Publish()
 {
@@ -364,25 +364,30 @@ int NIDAQmxADC::GetData()
   { // start mutex critical section
     std::lock_guard< std::mutex > lock( mDataMutex );
     RecordDebugTime( "Callback() 2: acquired mutex" );
-    long int sampsPerChanRead;
+    long int sampsPerChanRead = 0;
    
     if( mNumberOfBuffersQueued >= NIDAQ_MAX_BUFFERS )
     {
       bcierr << "buffer queue overflowed" << endl; // do not add a buffer if we ran out of buffers
     }
-    else if( !DAQMXFAILED( DAQmxReadBinaryI16(
-      mTaskHandle,
-      mSamplesPerBlock,
-      mSecondsPerBlock * 5.0, // timeout in seconds
-      DAQmx_Val_GroupByChannel,
-      mHalfBuffers[ mNumberOfBuffersQueued ],
-      mNumberOfChannels * mSamplesPerBlock,
-      &sampsPerChanRead,
-      NULL
-    ) ) )
-    {
-      mNumberOfBuffersQueued++;
-      RecordDebugTime( "Callback() 3: received data" );
+    else
+	{
+      CHECK_DAQMX_FAILED( DAQmxReadBinaryI16(
+        mTaskHandle,
+        mSamplesPerBlock,
+        mSecondsPerBlock * 5.0, // timeout in seconds
+        DAQmx_Val_GroupByChannel,
+        mHalfBuffers[ mNumberOfBuffersQueued ],
+        mNumberOfChannels * mSamplesPerBlock,
+        &sampsPerChanRead,
+        NULL
+      ) );
+      if( sampsPerChanRead == mSamplesPerBlock )
+      {
+        mNumberOfBuffersQueued++;
+        RecordDebugTime( "Callback() 3: received data" );
+      }
+      else bcierr << "DAQmx returned an incomplete sample block" << endl;
     }
   } // end mutex critical section
   mConditionVariable.notify_one();
