@@ -1,0 +1,1 @@
+echo set state DebugTimes 1 | %~dp0app\prog\BCI2000Shell.exe

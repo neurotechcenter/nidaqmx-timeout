@@ -20,11 +20,11 @@ set title "Well... Here I am."
 reset system
 
 set environment GITREV ${system git describe --always --all --long --dirty=+ --broken=!}
-set environment SYSLOG system-logs/$YYYYMMDD-$HHMMSS-operator.txt
-log This log will be saved in $SYSLOG
+set environment SYSLOG system-logs/$COMPUTERNAME-$YYYYMMDD-$HHMMSS-operator.txt
 
 startup system localhost --SystemLogFile=$BCI2000LAUNCHDIR/../../$SYSLOG
 
+log This log will be saved in $SYSLOG
 warn git revision is $GITREV
 
 start executable NIDAQ_mx_Source       --local

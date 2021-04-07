@@ -308,7 +308,7 @@ std::string NIDAQmxADC::ReportDebugTimes( void )
 				std::stringstream ss;
 				ss << " " << std::fixed << std::setw( 12 ) << std::setprecision( 6 ) << t;
 				std::string key = ss.str();
-				while( merged.count( key ) ) key += "+";
+				while( merged.count( key ) ) key += "1";
 				merged[ key ] = name;
 			}
 		}
@@ -317,9 +317,9 @@ std::string NIDAQmxADC::ReportDebugTimes( void )
 	mReadingDebugTimes = false;
 	if( !merged.size() ) return "";
 	std::stringstream ss;
-	ss << "{" << endl;
+	ss << " {" << endl;
 	for( auto it = merged.begin(); it != merged.end(); it++ )
-	    ss << it->first << ": " << it->second << endl;
+	    ss << it->first << ": '" << it->second << "'," << endl;
 	ss << "}";
 	return ss.str();
 }
