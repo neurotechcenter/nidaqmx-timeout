@@ -284,7 +284,7 @@ DebugTimingDeque & NIDAQmxADC::RecordDebugTime( const std::string & name )
 	bool useLock = mReadingDebugTimes;
 	if( useLock ) lock.lock();
 	DebugTimingDeque & d = mDebugTimes[ name ];
-	while( d.size() > 5 ) d.pop_front();
+	while( d.size() > 4 ) d.pop_front();
 	d.push_back( t );
 	if( useLock ) lock.unlock();
 	return d;
@@ -342,7 +342,8 @@ long int NIDAQmxADC::Callback( TaskHandle mTaskHandle, int32 everyNsamplesEventT
   if( pointerToADC )
   {
     try { pointerToADC->GetData(); } // we don't want a callback function to throw an exception
-    catch(...) { bcierr << "Callback() threw an exception" << endl; } // shouldn't happen anyway
+    catch( std::exception const & exc ) { bcierr <<  "Callback() threw a std::exception: " << exc.what() << endl; }
+    catch( ... ) { bcierr << "Callback() threw an exception of unknown type" << endl; }
   }
   else { bcierr << "Callback() received NULL pointer to ADC" << endl; }
   return DAQmxSuccess; // always? well, OK...
@@ -371,7 +372,7 @@ int NIDAQmxADC::GetData()
       bcierr << "buffer queue overflowed" << endl; // do not add a buffer if we ran out of buffers
     }
     else
-	{
+    {
       CHECK_DAQMX_FAILED( DAQmxReadBinaryI16(
         mTaskHandle,
         mSamplesPerBlock,
