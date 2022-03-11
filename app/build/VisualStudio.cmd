@@ -12,14 +12,17 @@ if @%1==@ goto :finished
 set "VSVERSION=%~1"
 set "TRIED=%TRIED% %VSVERSION%"
 shift
+if not @%DEBUGVS%==@ echo :iterate (trying %VSVERSION%)
 
 ::echo hello %VSVERSION%
 set "VSBASE="
 
 if "%VSVERSION%"=="auto" goto :auto
 
-if "%VSVERSION%"=="2019" ( set "VSYEAR=2019" && set "VSVERSION=16" && goto :knownPost2019 )
-if "%VSVERSION%"=="16"   ( set "VSYEAR=2019" && set "VSVERSION=16" && goto :knownPost2019 )
+:resolve
+if not @%DEBUGVS%==@ echo :resolve
+if "%VSVERSION%"=="2019" ( set "VSYEAR=2019" && set "VSVERSION=16" && goto :knownPost2017 )
+if "%VSVERSION%"=="16"   ( set "VSYEAR=2019" && set "VSVERSION=16" && goto :knownPost2017 )
 
 if "%VSVERSION%"=="2017" ( set "VSYEAR=2017" && set "VSVERSION=15" && goto :knownPost2017 )
 if "%VSVERSION%"=="15"   ( set "VSYEAR=2017" && set "VSVERSION=15" && goto :knownPost2017 )
@@ -37,6 +40,7 @@ echo Unknown IDE version %VSVERSION%
 goto :iterate
 
 :auto
+if not @%DEBUGVS%==@ echo :auto
 set "VSWHEREBIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if not exist "%VSWHEREBIN%" ( echo cannot use "auto" mode - cannot locate vswhere.exe utility && goto :iterate )
 for /F "tokens=1,2 delims==" %%i in ('"%VSWHEREBIN%" -property installationPath') do set "VSBASE=%%i"
@@ -45,9 +49,10 @@ if not "%VSBASE%"=="" set "VSBASE=%VSBASE%\"
 set "VSRELPATH=VC\Auxiliary\Build\vcvarsall.bat"
 set "VS64BITARG=x64"
 set "VS32BITARG=x86"
-goto :finished
+goto :resolve
 
 :knownPost2017
+if not @%DEBUGVS%==@ echo :knownPost2017
 set "VSBASE="
 if not exist "%VSBASE%" set "VSBASE=%ProgramFiles%\Microsoft Visual Studio\%VSYEAR%\BuildTools\"
 if not exist "%VSBASE%" set "VSBASE=%ProgramFiles%\Microsoft Visual Studio\%VSYEAR%\Community\"
@@ -64,6 +69,7 @@ set "VS32BITARG=x86"
 goto :finished
 
 :knownPost2010
+if not @%DEBUGVS%==@ echo :knownPost2010
 if "%VSBASE%"=="" goto :iterate
 set "VSRELPATH=..\..\VC\vcvarsall.bat"
 set "VS64BITARG=amd64"
@@ -72,6 +78,7 @@ goto :finished
 
 
 :finished
+if not @%DEBUGVS%==@ echo :finished (VSYEAR="%VSYEAR%" VSVERSION="%VSVERSION%")
 if "%VSBASE%"=="" ( echo failed to find Microsoft Visual Studio version[s]%TRIED% && exit /b 1 )
 if not exist "%VSBASE%" ( echo failed to locate "%VSBASE%%VSRELPATH%" && set "VSBASE=" && goto :iterate )
 set "VS_USE_CMAKE_ARCH_FLAG="
@@ -82,4 +89,5 @@ if not exist "%VSBASE%%VSRELPATH%" ( echo failed to locate "%VSBASE%%VSRELPATH%"
 if /I @%ARCH%==@Win32 call "%VSBASE%%VSRELPATH%" %VS32BITARG%
 if /I @%ARCH%==@Win64 call "%VSBASE%%VSRELPATH%" %VS64BITARG%
 
+echo VSYEAR="%VSYEAR%" VSVERSION="%VSVERSION%"
 
